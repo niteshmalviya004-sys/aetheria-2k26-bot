@@ -7,7 +7,7 @@ http.createServer((req, res) => res.end('Aetheria 2K26 WhatsApp Bot is Active!')
 
 // ⚠️ Yahan apna WhatsApp Number daalein (Country Code ke sath, bina '+' sign ke)
 // Example: '919876543210'
-const PHONE_NUMBER = '91XXXXXXXXXX'; 
+const PHONE_NUMBER = '919203773389'; 
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
