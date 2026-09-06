@@ -1,28 +1,34 @@
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode-terminal');
 const http = require('http');
 
-// Render port setup to prevent port errors
+// Render port binding
 const PORT = process.env.PORT || 10000;
-http.createServer((req, res) => res.end('Aetheria 2K26 WhatsApp Bot is Running!')).listen(PORT);
+http.createServer((req, res) => res.end('Aetheria 2K26 WhatsApp Bot is Active!')).listen(PORT);
+
+// ⚠️ Yahan apna WhatsApp Number daalein (Country Code ke sath, bina '+' sign ke)
+// Example: '919876543210'
+const PHONE_NUMBER = '91XXXXXXXXXX'; 
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
     const sock = makeWASocket({
         auth: state,
-        browser: ['Aetheria-Bot', 'Chrome', '1.0.0']
+        browser: ['Ubuntu', 'Chrome', '20.0.04']
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
-        
-        // Print QR Code using qrcode-terminal
-        if (qr) {
-            qrcode.generate(qr, { small: true });
-        }
+    if (!sock.authState.creds.registered) {
+        setTimeout(async () => {
+            const code = await sock.requestPairingCode(PHONE_NUMBER);
+            console.log('\n======================================');
+            console.log(`YOUR WHATSAPP PAIRING CODE IS: ${code}`);
+            console.log('======================================\n');
+        }, 3000);
+    }
 
+    sock.ev.on('connection.update', (update) => {
+        const { connection } = update;
         if (connection === 'close') {
             console.log('Connection closed. Reconnecting...');
             connectToWhatsApp();
