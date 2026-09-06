@@ -6,8 +6,7 @@ const PORT = process.env.PORT || 10000;
 http.createServer((req, res) => res.end('Aetheria 2K26 WhatsApp Bot is Active!')).listen(PORT);
 
 // ⚠️ YAHAN APNA WHATSAPP NUMBER DAALEIN (Country code ke sath, bina '+' ke)
-// Example: '919876543210'
-const PHONE_NUMBER = '91XXXXXXXXXX'; 
+const PHONE_NUMBER = '919203773389'; 
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
@@ -20,21 +19,26 @@ async function connectToWhatsApp() {
 
     sock.ev.on('creds.update', saveCreds);
 
-    if (!sock.authState.creds.registered) {
-        setTimeout(async () => {
-            try {
-                const code = await sock.requestPairingCode(PHONE_NUMBER);
-                console.log('\n======================================');
-                console.log(`NEW PAIRING CODE: ${code}`);
-                console.log('======================================\n');
-            } catch (err) {
-                console.error("Failed to request pairing code:", err);
-            }
-        }, 5000);
-    }
+    let pairingRequested = false;
 
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
+    sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        // Trigger pairing code ONLY after socket connection is active
+        if (!sock.authState.creds.registered && !pairingRequested) {
+            pairingRequested = true;
+            setTimeout(async () => {
+                try {
+                    const code = await sock.requestPairingCode(PHONE_NUMBER);
+                    console.log('\n======================================');
+                    console.log(`NEW PAIRING CODE: ${code}`);
+                    console.log('======================================\n');
+                } catch (err) {
+                    console.error("Pairing Code Error:", err.message);
+                    pairingRequested = false; // Retry on failure
+                }
+            }, 6000); // 6 second delay to let WebSocket stabilize
+        }
         
         if (connection === 'close') {
             const shouldReconnect = (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut);
