@@ -2,27 +2,37 @@ const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers
 const http = require('http');
 const QRCode = require('qrcode');
 
-let qrImageHtml = '<h2>QR Code Generating... Refresh page in 5 seconds.</h2>';
+let currentQr = '';
 
-// Express-less Lightweight HTTP Server
 const PORT = process.env.PORT || 10000;
-http.createServer((req, res) => {
+http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
+    
+    let bodyContent = '<h2>QR Code Generating... Refresh in 5 seconds.</h2>';
+    if (currentQr) {
+        try {
+            const svg = await QRCode.toString(currentQr, { type: 'svg', margin: 2 });
+            bodyContent = `<div style="background:white; padding:20px; border-radius:10px;">${svg}</div>`;
+        } catch (e) {
+            bodyContent = '<h3>Error rendering QR Code</h3>';
+        }
+    }
+
     res.end(`
         <!DOCTYPE html>
         <html>
         <head>
             <title>Aetheria Bot QR</title>
-            <meta http-equiv="refresh" content="10">
+            <meta http-equiv="refresh" content="7">
             <style>
-                body { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; background:#111; color:#fff; }
-                img { border: 8px solid white; border-radius: 8px; }
+                body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:sans-serif; background:#111; color:#fff; margin:0; }
+                svg { width: 280px; height: 280px; }
             </style>
         </head>
         <body>
             <h1>Aetheria 2K26 WhatsApp Bot</h1>
-            ${qrImageHtml}
-            <p>Scan this QR code using WhatsApp Link Device</p>
+            ${bodyContent}
+            <p>Scan this QR code using WhatsApp Linked Devices</p>
         </body>
         </html>
     `);
@@ -43,13 +53,8 @@ async function connectToWhatsApp() {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
-            try {
-                const url = await QRCode.toDataURL(qr);
-                qrImageHtml = `<img src="${url}" width="300"/>`;
-                console.log('✅ Fresh QR Code generated on Web Link!');
-            } catch (err) {
-                console.error('Failed to render QR', err);
-            }
+            currentQr = qr;
+            console.log('✅ New SVG QR Code Ready!');
         }
 
         if (connection === 'close') {
@@ -57,7 +62,7 @@ async function connectToWhatsApp() {
             console.log('Connection closed. Reconnecting...', shouldReconnect);
             if (shouldReconnect) connectToWhatsApp();
         } else if (connection === 'open') {
-            qrImageHtml = '<h2>✅ Bot Successfully Connected To WhatsApp!</h2>';
+            currentQr = '';
             console.log('✅ Aetheria 2K26 WhatsApp Bot Connected Successfully!');
         }
     });
