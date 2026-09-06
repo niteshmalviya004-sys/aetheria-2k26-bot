@@ -1,12 +1,13 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const http = require('http');
 
-// Render Port Binding
+// Render Port Setup
 const PORT = process.env.PORT || 10000;
 http.createServer((req, res) => res.end('Aetheria 2K26 WhatsApp Bot is Active!')).listen(PORT);
 
-// ⚠️ Apna WhatsApp number bina '+' ke enter karein (e.g., '919876543210')
-const PHONE_NUMBER = '919203773389'; 
+// ⚠️ YAHAN APNA WHATSAPP NUMBER DAALEIN (Country code ke sath, bina '+' ke)
+// Example: '919876543210'
+const PHONE_NUMBER = '91XXXXXXXXXX'; 
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
@@ -14,23 +15,22 @@ async function connectToWhatsApp() {
     const sock = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        browser: ["Ubuntu", "Chrome", "20.0.04"]
+        browser: Browsers.macOS('Desktop')
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    // Request Pairing Code if not registered
     if (!sock.authState.creds.registered) {
         setTimeout(async () => {
             try {
                 const code = await sock.requestPairingCode(PHONE_NUMBER);
                 console.log('\n======================================');
-                console.log(`PAIRING CODE: ${code}`);
+                console.log(`NEW PAIRING CODE: ${code}`);
                 console.log('======================================\n');
             } catch (err) {
                 console.error("Failed to request pairing code:", err);
             }
-        }, 4000);
+        }, 5000);
     }
 
     sock.ev.on('connection.update', (update) => {
